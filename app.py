@@ -73,7 +73,7 @@ st.markdown("""
 }
 /* 左3列の縦の隙間を調整するクラス */
 .spacer {
-    height: 60px;
+    height: 120px;
 }
 </style>
 """, unsafe_allow_html=True)
