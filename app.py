@@ -4,11 +4,11 @@ from datetime import datetime, timedelta
 # ページ設定
 st.set_page_config(page_title="机の使用状況", layout="wide")
 
-# JST(日本時間)を取得する関数（追加ライブラリ不要の標準機能）
+# JST(日本時間)を取得する関数
 def get_jst_time():
     return (datetime.utcnow() + timedelta(hours=9)).strftime("%H:%M")
 
-# 全員で状態を共有するためのデータストア (簡易データベース)
+# 全員で状態を共有するためのデータストア
 @st.cache_resource
 def get_desks():
     desks = {}
@@ -29,7 +29,7 @@ def get_desks():
 
 desks = get_desks()
 
-# ボタンが押されたときの処理 (コールバック関数)
+# ボタンが押されたときの処理
 def register_desk(desk_id):
     desks[desk_id]["is_used"] = True
     desks[desk_id]["time"] = get_jst_time()
@@ -38,7 +38,7 @@ def release_desk(desk_id):
     desks[desk_id]["is_used"] = False
     desks[desk_id]["time"] = None
 
-# CSSで赤色/白色の四角形やデザインを定義
+# CSS（デザインと縦の間隔の定義）
 st.markdown("""
 <style>
 .desk-container {
@@ -54,7 +54,7 @@ st.markdown("""
     color: #333333;
 }
 .desk-red {
-    background-color: #ffeaea; /* 目に優しい薄い赤 */
+    background-color: #ffeaea;
     border-color: #ff4c4c;
     color: #cc0000;
 }
@@ -64,12 +64,16 @@ st.markdown("""
 }
 .desk-time {
     font-size: 16px;
-    height: 24px; /* 高さを固定してレイアウト崩れを防ぐ */
+    height: 24px;
     margin-top: 5px;
     color: #555;
 }
 .desk-red .desk-time {
-    color: #cc0000; /* 赤い時は文字色も赤系に */
+    color: #cc0000;
+}
+/* 左3列の縦の隙間を調整するクラス */
+.spacer {
+    height: 60px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -90,8 +94,8 @@ def draw_desk(desk_id):
             <div class="desk-time"></div>
         </div>
         ''', unsafe_allow_html=True)
-        st.write("") # スペーサー
-        st.write("") 
+        st.write("") # ボタンがない分のスペース補正
+        st.write("")
         return
 
     # 状態に応じて背景色と打刻テキストを決定
@@ -110,30 +114,24 @@ def draw_desk(desk_id):
     col1, col2 = st.columns(2)
     col1.button("登録", key=f"reg_{desk_id}", on_click=register_desk, args=(desk_id,), use_container_width=True)
     col2.button("解除", key=f"rel_{desk_id}", on_click=release_desk, args=(desk_id,), use_container_width=True)
-    st.write("") # 机ごとの余白
 
 # 4列のレイアウト枠を作成
 cols = st.columns(4)
 
-# 1列目 (将棋 x 3)
-with cols[0]:
-    for i in range(1, 4):
-        draw_desk(f"1-{i}")
-
-# 2列目 (将棋 x 3)
-with cols[1]:
-    for i in range(1, 4):
-        draw_desk(f"2-{i}")
-
-# 3列目 (将棋 x 3)
-with cols[2]:
-    for i in range(1, 4):
-        draw_desk(f"3-{i}")
+# 1〜3列目 (将棋 x 3) ＋ 間にスペースを追加
+for col_idx in range(3):
+    with cols[col_idx]:
+        for row_idx in range(1, 4):
+            draw_desk(f"{col_idx + 1}-{row_idx}")
+            # 1つ目と2つ目の机の下に縦のスペースを入れる
+            if row_idx < 3:
+                st.markdown('<div class="spacer"></div>', unsafe_allow_html=True)
 
 # 4列目 (受付, 将棋, オセロ, 囲碁, 将棋)
 with cols[3]:
     for i in range(0, 5):
         draw_desk(f"4-{i}")
+        st.write("") # 少しだけ余白を入れる
 
 # 画面下部
 st.markdown("---")
