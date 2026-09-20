@@ -1,29 +1,66 @@
-from flask import Flask, render_template, jsonify, request
+import streamlit as st
 
-app = Flask(__name__)
+# ページ設定
+st.set_page_config(page_title="机の使用状況マップ", layout="wide")
 
-# 机の初期状態（False=空席, True=使用中）
-# id: 1~9(1~3列目の将棋), 10(4列目前 将棋), 11(オセロ), 12(囲碁), 13(4列目後 将棋)
-desks = {str(i): False for i in range(1, 14)}
+# 全員で状態を共有するための設定 (サーバーのメモリ上に保存)
+@st.cache_resource
+def get_desks():
+    # id: 1~13, 状態: False(空席) / True(使用中)
+    return {str(i): False for i in range(1, 14)}
 
-@app.route('/')
-def index():
-    # 画面を表示する
-    return render_template('index.html')
+desks = get_desks()
 
-@app.route('/status', methods=['GET'])
-def get_status():
-    # 全ての机の現在の状態をJSONで返す
-    return jsonify(desks)
+# ボタンが押されたときの処理
+def toggle_desk(desk_id):
+    desks[desk_id] = not desks[desk_id]
 
-@app.route('/toggle/<desk_id>', methods=['POST'])
-def toggle(desk_id):
-    # 指定された机の状態を反転させる
-    if desk_id in desks:
-        desks[desk_id] = not desks[desk_id]
-        return jsonify({'status': 'success', 'state': desks[desk_id]})
-    return jsonify({'status': 'error', 'message': 'Desk not found'}), 404
+st.title("机の使用状況マップ")
+st.write("ボタンを押すと「空席／使用中」が切り替わります。")
 
-if __name__ == '__main__':
-    # host='0.0.0.0' にすることで、同じWi-Fi内のスマホ等からもアクセス可能になります
-    app.run(debug=True, host='0.0.0.0', port=5000)
+# 画面のレイアウト (5列に分割)
+col1, col2, col3, col4, col5 = st.columns(5)
+
+# 机のボタンを描画する関数
+def draw_desk(col, desk_id, label):
+    is_used = desks[desk_id]
+    if is_used:
+        status = "🔴 使用中"
+    else:
+        status = "🟢 空席"
+        
+    # ボタンを表示
+    col.button(f"{label}\n\n{status}", key=f"btn_{desk_id}", on_click=toggle_desk, args=(desk_id,), use_container_width=True)
+
+with col1:
+    st.markdown("### 1列目")
+    draw_desk(col1, '1', '将棋')
+    draw_desk(col1, '2', '将棋')
+    draw_desk(col1, '3', '将棋')
+
+with col2:
+    st.markdown("### 2列目")
+    draw_desk(col2, '4', '将棋')
+    draw_desk(col2, '5', '将棋')
+    draw_desk(col2, '6', '将棋')
+
+with col3:
+    st.markdown("### 3列目")
+    draw_desk(col3, '7', '将棋')
+    draw_desk(col3, '8', '将棋')
+    draw_desk(col3, '9', '将棋')
+
+with col4:
+    st.markdown("### 4列目")
+    draw_desk(col4, '10', '将棋 (前)')
+    draw_desk(col4, '11', 'オセロ')
+    draw_desk(col4, '12', '囲碁')
+    draw_desk(col4, '13', '将棋 (後)')
+
+with col5:
+    st.markdown("### 受付列")
+    st.info("受付スペース")
+
+st.markdown("---")
+# Streamlitは自動更新されないため、他の人が変更した状態を見るためのボタン
+st.button("🔄 最新の状態に更新", use_container_width=True)
