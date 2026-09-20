@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>机の使用状況マップ</title>
+<style>
+  body { font-family: sans-serif; text-align: center; background-color: #f9f9f9; }
+  .room { display: flex; justify-content: center; gap: 30px; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: max-content; margin: 20px auto; }
+  .column { display: flex; flex-direction: column; gap: 15px; }
+  .label { font-size: 0.9em; color: #666; margin-bottom: 5px; font-weight: bold; }
+  .desk { width: 90px; height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; user-select: none; background: #e8f5e9; color: #2e7d32; font-weight: bold; transition: all 0.2s; }
+  .desk.in-use { background: #ffebee; border-color: #f44336; color: #c62828; }
+  .status-text { font-size: 0.75em; margin-top: 4px; }
+  .reception { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; background: #eeeeee; border-radius: 8px; font-weight: bold; color: #333; }
+</style>
+</head>
+<body>
+
+  <h2>机の使用状況</h2>
+  <p>机をクリックすると状態が切り替わります。</p>
+
+  <div class="room">
+    <!-- 左1列目 -->
+    <div class="column">
+      <div class="label">1列目</div>
+      <div class="desk" id="desk-1" onclick="toggleStatus('1')">将棋<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-2" onclick="toggleStatus('2')">将棋<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-3" onclick="toggleStatus('3')">将棋<span class="status-text">空席</span></div>
+    </div>
+
+    <!-- 左2列目 -->
+    <div class="column">
+      <div class="label">2列目</div>
+      <div class="desk" id="desk-4" onclick="toggleStatus('4')">将棋<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-5" onclick="toggleStatus('5')">将棋<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-6" onclick="toggleStatus('6')">将棋<span class="status-text">空席</span></div>
+    </div>
+
+    <!-- 左3列目 -->
+    <div class="column">
+      <div class="label">3列目</div>
+      <div class="desk" id="desk-7" onclick="toggleStatus('7')">将棋<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-8" onclick="toggleStatus('8')">将棋<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-9" onclick="toggleStatus('9')">将棋<span class="status-text">空席</span></div>
+    </div>
+
+    <!-- 4列目 -->
+    <div class="column">
+      <div class="label">4列目</div>
+      <div class="desk" id="desk-10" onclick="toggleStatus('10')">将棋 (前)<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-11" onclick="toggleStatus('11')">オセロ<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-12" onclick="toggleStatus('12')">囲碁<span class="status-text">空席</span></div>
+      <div class="desk" id="desk-13" onclick="toggleStatus('13')">将棋 (後)<span class="status-text">空席</span></div>
+    </div>
+
+    <!-- 受付 -->
+    <div class="column">
+      <div class="label">受付</div>
+      <div class="reception">受付</div>
+    </div>
+  </div>
+
+  <script>
+    // サーバーから最新の状況を取得して画面を更新する
+    async function fetchStatus() {
+      try {
+        const response = await fetch('/status');
+        const data = await response.json();
+        
+        for (const [id, isUsed] of Object.entries(data)) {
+          const desk = document.getElementById(`desk-${id}`);
+          const statusSpan = desk.querySelector('.status-text');
+          
+          if (isUsed) {
+            desk.classList.add('in-use');
+            statusSpan.textContent = '使用中';
+          } else {
+            desk.classList.remove('in-use');
+            statusSpan.textContent = '空席';
+          }
+        }
+      } catch (error) {
+        console.error('状態の取得に失敗しました:', error);
+      }
+    }
+
+    // 机がクリックされたときにサーバーに通知する
+    async function toggleStatus(id) {
+      try {
+        await fetch(`/toggle/${id}`, { method: 'POST' });
+        fetchStatus(); // 変更後、すぐに画面を最新状態にする
+      } catch (error) {
+        console.error('状態の変更に失敗しました:', error);
+      }
+    }
+
+    // ページ読み込み時に1回実行
+    fetchStatus();
+    
+    // 3秒に1回、自動で最新状況をサーバーに聞きに行く（他の人が変更した用）
+    setInterval(fetchStatus, 3000);
+  </script>
+
+</body>
+</html>
